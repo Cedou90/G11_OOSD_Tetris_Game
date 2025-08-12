@@ -11,7 +11,6 @@ import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 
 public class Game {
-
     public static final int TILE_SIZE = 30;
     public static final int WIDTH = 10;  // columns
     public static final int HEIGHT = 20; // rows
@@ -54,8 +53,25 @@ public class Game {
         AnimationTimer timer = new AnimationTimer() {
             @Override
             public void handle(long now) {
-//                render();
+                render();
             }
         };
         timer.start();
-    }}
+    }
+
+    private void render(){
+        gc.clearRect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+        gc.setStroke(javafx.scene.paint.Color.LIGHTGRAY);
+        gc.setLineWidth(1);
+
+        for (int x = 0; x <= WIDTH; x++) {
+            gc.strokeLine(x * TILE_SIZE, 0, x * TILE_SIZE, WINDOW_HEIGHT);
+        }
+
+        for (int y = 0; y <= HEIGHT; y++) {
+            gc.strokeLine(0, y * TILE_SIZE, WINDOW_WIDTH, y * TILE_SIZE);
+        }
+    }
+
+}
