@@ -17,8 +17,9 @@ import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
 import tetris.Main;
+import tetris.common.Action;
+import tetris.common.GameState;
 import tetris.controller.game.GameController;
-import tetris.controller.api.IGameController;
 import tetris.model.GameBoard;
 import tetris.model.Tetromino;
 
@@ -88,15 +89,26 @@ public class GameView {
 
         // Keyboard input handling
         scene.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
+            Action action = switch (e.getCode()) {
+                case LEFT   -> Action.MOVE_LEFT;
+                case RIGHT  -> Action.MOVE_RIGHT;
+                case UP     -> Action.ROTATE_CW;
+                case DOWN   -> Action.SOFT_DROP;
+                case SPACE  -> Action.HARD_DROP;
+                default     -> null;
+            };
+
+            if (action != null) {
+                controller.handle(action);
+                draw();
+                e.consume();
+                return;
+            }
+
             switch (e.getCode()) {
-                case LEFT -> controller.moveLeft();
-                case RIGHT -> controller.moveRight();
-                case UP -> controller.rotateCW();
-                case DOWN -> controller.softDrop();
-                case SPACE -> controller.hardDrop();
                 case P -> togglePause();
                 case R -> {
-                    if (controller.state() == IGameController.State.GAME_OVER) {
+                    if (controller.state() == GameState.GAME_OVER) {
                         controller.restart();
                         loop.start();
                         draw();
@@ -123,9 +135,9 @@ public class GameView {
     // Toggles pause state and updates the game loop accordingly.
     private void togglePause() {
         controller.togglePause();
-        if (controller.state() == IGameController.State.PAUSE) {
+        if (controller.state() == GameState.PAUSE) {
             loop.stop();
-        } else if (controller.state() == IGameController.State.PLAY) {
+        } else if (controller.state() == GameState.PLAY) {
             loop.start();
         }
         draw(); // Update overlay text
@@ -133,7 +145,7 @@ public class GameView {
 
     // Shows confirmation dialog before returning to main menu.
     private void askExitToMenu() {
-        boolean wasPlaying = (controller.state() == IGameController.State.PLAY);
+        boolean wasPlaying = (controller.state() == GameState.PLAY);
 
         if (wasPlaying) {             // Pause game before show alert
             controller.togglePause(); // PLAY -> PAUSE

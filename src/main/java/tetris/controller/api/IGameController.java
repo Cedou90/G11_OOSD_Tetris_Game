@@ -1,22 +1,18 @@
 package tetris.controller.api;
 
+import tetris.common.Action;
+import tetris.common.GameState;
 import tetris.model.IGameBoard;
 
 public interface IGameController {
-    enum State { PLAY, PAUSE, GAME_OVER }
 
     IGameBoard board();
-    State state();
+    GameState state();
 
     void start();
     void tick();
     void restart();
     void reset();
     void togglePause();
-
-    void moveLeft();
-    void moveRight();
-    void rotateCW();
-    void softDrop();
-    void hardDrop();
+    void handle(Action action);
 }
