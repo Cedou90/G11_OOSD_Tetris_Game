@@ -1,4 +1,4 @@
-package tetris.panel;
+package tetris.view;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -17,8 +17,8 @@ import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
 import tetris.Main;
-import tetris.controller.GameController;
-import tetris.controller.IGameController;
+import tetris.controller.game.GameController;
+import tetris.controller.api.IGameController;
 import tetris.model.GameBoard;
 import tetris.model.Tetromino;
 

@@ -12,11 +12,11 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import tetris.controller.GameController;
-import tetris.panel.Configuration;
-import tetris.panel.GameView;
-import tetris.panel.HighScore;
-import tetris.panel.SplashWindow;
+import tetris.controller.game.GameController;
+import tetris.view.Configuration;
+import tetris.view.GameView;
+import tetris.view.HighScore;
+import tetris.view.SplashWindow;
 
 import java.util.Optional;
 

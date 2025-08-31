@@ -1,4 +1,4 @@
-package tetris.panel;
+package tetris.view;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
