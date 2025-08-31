@@ -1,4 +1,4 @@
-package tetris.controller;
+package tetris.controller.api;
 
 import tetris.model.IGameBoard;
 
