@@ -1,12 +1,13 @@
-package tetris.controller;
+package tetris.controller.game;
 
+import tetris.controller.api.IGameController;
 import tetris.model.GameBoard;
 import tetris.model.IGameBoard;
 
 /**
  * GameController: Game flow management. GameView - Controller - data handling(GameBoard)
  */
-public class GameController implements IGameController{
+public class GameController implements IGameController {
     private final IGameBoard board;
     private State state = State.PLAY;
 
