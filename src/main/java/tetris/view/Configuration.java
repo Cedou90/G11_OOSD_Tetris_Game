@@ -9,6 +9,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
+import tetris.setting.GameSetting;
 
 import java.net.URL;
 
@@ -20,6 +21,20 @@ public class Configuration {
     private static final double SECTION_SPACING = 15;
     private static final double CONTROL_SPACING = 8;
     private static final double SLIDER_WIDTH = 400; // Increased slider width
+
+    private final GameSetting settings;
+    private final Runnable onBack;
+
+    //a navigation callback
+    public Configuration(GameSetting settings, Runnable onBack) {
+        this.settings = settings;
+        this.onBack   = onBack;
+    }
+
+    private static long levelToMs(int level) {
+        int lvl = Math.max(1, Math.min(level, 10));
+        return 700 - (lvl - 1) * 50;
+    }
 
     public void startConfig(Stage stage) {
         VBox layout = new VBox(SECTION_SPACING);
@@ -39,21 +54,21 @@ public class Configuration {
         slidersTitle.getStyleClass().add("label-section");
 
         Label widthLabel = createFieldLabel("Field Width (No of cells):");
-        Slider widthSlider = createStyledSlider(5, 15, 10);
+        Slider widthSlider = createStyledSlider(5, 15, settings.getFieldWidth());
         Label widthValueLabel = createValueLabel(widthSlider.getValue());
         widthSlider.valueProperty().addListener((obs, o, v) ->
                 widthValueLabel.setText(String.format("%.0f", v)));
         HBox widthControlBox = row(widthSlider, widthValueLabel);
 
         Label heightLabel = createFieldLabel("Field Height (No of cells):");
-        Slider heightSlider = createStyledSlider(15, 30, 20);
+        Slider heightSlider = createStyledSlider(15, 30, settings.getFieldHeight());
         Label heightValueLabel = createValueLabel(heightSlider.getValue());
         heightSlider.valueProperty().addListener((obs, o, v) ->
                 heightValueLabel.setText(String.format("%.0f", v)));
         HBox heightControlBox = row(heightSlider, heightValueLabel);
 
         Label levelLabel = createFieldLabel("Game Level:");
-        Slider levelSlider = createStyledSlider(1, 10, 6);
+        Slider levelSlider = createStyledSlider(1, 10, settings.getLevel());
         Label levelValueLabel = createValueLabel(levelSlider.getValue());
         levelSlider.valueProperty().addListener((obs, o, v) ->
                 levelValueLabel.setText(String.format("%.0f", v)));
@@ -83,11 +98,16 @@ public class Configuration {
                 optionsTitle, musicControlBox, soundControlBox, aiControlBox, extendControlBox
         );
 
-        // Back button
+        // Back button - persist values into the same settings instance, then use the callback
         Button button_back = new Button("Back");
         button_back.setPrefSize(BUTTON_WIDTH, BUTTON_HEIGHT);
         button_back.getStyleClass().add("styled-button");
-        button_back.setOnAction(e -> new tetris.Main().showMainMenu(stage));
+        button_back.setOnAction(e -> {
+            settings.setFieldWidth ((int)Math.round(widthSlider.getValue()));
+            settings.setFieldHeight((int)Math.round(heightSlider.getValue()));
+            settings.setLevel      ((int)Math.round(levelSlider.getValue()));
+            onBack.run();
+        });
 
         layout.getChildren().addAll(title, slidersBox, checkboxBox, button_back);
 
@@ -108,7 +128,7 @@ public class Configuration {
         stage.setTitle("Configuration");
         stage.setOnCloseRequest(evt -> {
             evt.consume();
-            new tetris.Main().showMainMenu(stage);
+            onBack.run();
         });
         stage.show();
     }

@@ -1,9 +1,8 @@
 package tetris.controller.game;
 
-import tetris.common.GameState;
 import tetris.common.Action;
+import tetris.common.GameState;
 import tetris.controller.api.IGameController;
-import tetris.model.GameBoard;
 import tetris.model.IGameBoard;
 
 /**
@@ -14,8 +13,6 @@ public class GameController implements IGameController {
     private GameState state = GameState.PLAY;
 
     public GameController(IGameBoard board) {this.board = board;}
-
-    public GameController() {this(new GameBoard());}
 
     @Override
     public IGameBoard board() {return board;}

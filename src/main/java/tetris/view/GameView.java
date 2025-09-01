@@ -16,12 +16,11 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
-import tetris.Main;
 import tetris.common.Action;
 import tetris.common.GameState;
 import tetris.controller.game.GameController;
-import tetris.model.GameBoard;
 import tetris.model.Tetromino;
+import tetris.setting.GameSetting;
 
 import java.util.Optional;
 
@@ -47,20 +46,32 @@ public class GameView {
     private final GameController controller;
     private final Canvas canvas;
     private final GameLoop loop;
+    private final Runnable onExitToMenu;
 
-    private long dropInterval = 500_000_000; //0.5sec
+    //Game level with simple speed curve. starting with level5 (500ms)
+    // Drop speed curve: level 1 = 700ms, each level up is 50ms faster.
+    // Level 10 will be 250ms. Values are in nanoseconds.
+    private static long intervalForLevel(int level) {
+        long base = 700_000_000L;          // 700ms
+        long step = 50_000_000L;           // 60ms per level
+        int lvl = Math.max(1, Math.min(level, 10)); // clamp between Level 1–10
+        return base - ((long)(lvl - 1) * step);
+    }
 
-    public GameView(Stage stage, GameController controller) {
+    //GameView with size canvas from dynamic board, build loop once suing level
+    public GameView(Stage stage, GameController controller, GameSetting setting, Runnable onExitToMenu) {
         this.stage = stage;
         this.controller = controller;
+        this.onExitToMenu = onExitToMenu;
 
-        // Canvas size based on board dimensions
-        int w = GameBoard.W * TILE + PADDING * 2;
-        int h = GameBoard.H * TILE + PADDING * 2;
+        // Canvas size based on board dimensions (dynamic)
+        int w = controller.board().getWidth()  * TILE + PADDING * 2;
+        int h = controller.board().getHeight() * TILE + PADDING * 2;
         this.canvas = new Canvas(w, h);
 
         // Game loop: Every drop interval (default 500ms) → controller.tick() → draw()
-        this.loop = new GameLoop(dropInterval) {
+        long interval = intervalForLevel(setting.getLevel());
+        this.loop = new GameLoop(interval) {
             @Override protected void update() { controller.tick(); }
             @Override protected void render() { draw(); }
         };
@@ -162,8 +173,7 @@ public class GameView {
         if (result.isPresent() && result.get() == ButtonType.OK) {
             loop.stop();
             controller.reset();
-            // Go back to main menu
-            new Main().showMainMenu(stage);
+            onExitToMenu.run();
         } else {                // Press Exit -> select No
             if (wasPlaying) {   // Press Exit While playing game
                 controller.togglePause(); // PAUSE -> PLAY
@@ -182,9 +192,13 @@ public class GameView {
         g.setFill(Color.web("#111318"));
         g.fillRect(0, 0, W, H);
 
+        int BW = controller.board().getWidth();
+        int BH = controller.board().getHeight();
+
         // Board background frame
         double bx = PADDING, by = PADDING;
-        double bw = GameBoard.W * TILE, bh = GameBoard.H * TILE;
+        double bw = BW * TILE, bh = BH * TILE;
+
         g.setFill(Color.web("#1b1f2a"));
         g.fillRoundRect(bx - 4, by - 4, bw + 8, bh + 8, 12, 12);
 
@@ -204,15 +218,14 @@ public class GameView {
 
     // Draws both fixed cells and the current tetromino.
     private void drawBoardCells(GraphicsContext g, double bx, double by) {
+        int BW = controller.board().getWidth();
+        int BH = controller.board().getHeight();
         int[][] cells = controller.board().cells();
 
         // Fixed blocks
-        for (int y = 0; y < GameBoard.H; y++) {
-            for (int x = 0; x < GameBoard.W; x++) {
-                int id = cells[y][x];
-                drawCell(g, bx, by, x, y, id);
-            }
-        }
+        for (int y = 0; y < BH; y++)
+            for (int x = 0; x < BW; x++)
+                drawCell(g, bx, by, x, y, cells[y][x]);
 
         // Current tetromino overlay
         Tetromino cur = controller.board().current();
@@ -230,16 +243,12 @@ public class GameView {
             }
         }
 
-        // Optional grid lines
+        // grid lines
         g.setStroke(Color.web("#2a3142"));
-        for (int x = 0; x <= GameBoard.W; x++) {
-            double xx = bx + x * TILE + 0.5;
-            g.strokeLine(xx, by, xx, by + GameBoard.H * TILE);
-        }
-        for (int y = 0; y <= GameBoard.H; y++) {
-            double yy = by + y * TILE + 0.5;
-            g.strokeLine(bx, yy, bx + GameBoard.W * TILE, yy);
-        }
+        for (int x = 0; x <= BW; x++)
+            g.strokeLine(bx + x * TILE + 0.5, by, bx + x * TILE + 0.5, by + BH * TILE);
+        for (int y = 0; y <= BH; y++)
+            g.strokeLine(bx, by + y * TILE + 0.5, bx + BW * TILE, by + y * TILE + 0.5);
     }
 
     /**
