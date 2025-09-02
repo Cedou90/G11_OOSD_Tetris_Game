@@ -193,5 +193,6 @@ public class Configuration {
 
         controlBox.getChildren().addAll(checkBox, spacer, status);
         return controlBox;
+
     }
 }
