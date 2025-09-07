@@ -113,9 +113,6 @@ public class Configuration {
         HBox soundControlBox  = makeToggle("Sound Effect", settings.isSfxOn(),
                 isSel -> { settings.setSfxOn(isSel); ConfigManager.save(settings); });
 
-        HBox aiControlBox     = makeToggle("AI Play", settings.isAiOn(),
-                isSel -> { settings.setAiOn(isSel); ConfigManager.save(settings); });
-
         HBox extendControlBox = makeToggle("Extend Mode", settings.isExtendOn(),
                 isSel -> {
                     settings.setExtendOn(isSel);
@@ -124,7 +121,7 @@ public class Configuration {
                 });
 
         checkboxBox.getChildren().addAll(
-                optionsTitle, musicControlBox, soundControlBox, aiControlBox, extendControlBox
+                optionsTitle, musicControlBox, soundControlBox, extendControlBox
         );
 
         // === Player Options (radio buttons) ===

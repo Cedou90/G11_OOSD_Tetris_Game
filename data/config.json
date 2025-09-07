@@ -1,11 +1,11 @@
 {
-  "fieldWidth" : 15,
-  "fieldHeight" : 30,
-  "level" : 10,
-  "musicOn" : false,
-  "sfxOn" : false,
-  "aiOn" : false,
+  "fieldWidth" : 9,
+  "fieldHeight" : 21,
+  "level" : 6,
+  "musicOn" : true,
+  "sfxOn" : true,
+  "aiOn" : true,
   "extendOn" : true,
-  "playerOneType" : "EXTERNAL",
-  "playerTwoType" : "EXTERNAL"
+  "playerOneType" : "HUMAN",
+  "playerTwoType" : "HUMAN"
 }
