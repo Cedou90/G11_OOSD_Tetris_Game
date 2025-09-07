@@ -18,6 +18,9 @@ import tetris.setting.PlayerType;
 import java.net.URL;
 import java.util.function.Consumer;
 
+import java.net.URL;
+import java.util.function.Consumer;
+
 public class Configuration {
 
     // UI constants
@@ -31,7 +34,6 @@ public class Configuration {
     private final Runnable onBack;
 
     private HBox playerTwoRow;
-
     public Configuration(GameSetting settings, Runnable onBack) {
         this.settings = settings;
         this.onBack = onBack;
@@ -54,6 +56,7 @@ public class Configuration {
         Label slidersTitle = new Label("Game Settings");
         slidersTitle.getStyleClass().add("label-section");
 
+        // Field width
         Label widthLabel = createFieldLabel("Field Width (No of cells):");
         Slider widthSlider = createStyledSlider(5, 15, settings.getFieldWidth());
         Label widthValueLabel = createValueLabel(widthSlider.getValue());
@@ -65,6 +68,7 @@ public class Configuration {
         });
         HBox widthControlBox = row(widthSlider, widthValueLabel);
 
+        // Field height
         Label heightLabel = createFieldLabel("Field Height (No of cells):");
         Slider heightSlider = createStyledSlider(15, 30, settings.getFieldHeight());
         Label heightValueLabel = createValueLabel(heightSlider.getValue());
@@ -76,6 +80,7 @@ public class Configuration {
         });
         HBox heightControlBox = row(heightSlider, heightValueLabel);
 
+        // Level
         Label levelLabel = createFieldLabel("Game Level:");
         Slider levelSlider = createStyledSlider(1, 10, settings.getLevel());
         Label levelValueLabel = createValueLabel(levelSlider.getValue());
