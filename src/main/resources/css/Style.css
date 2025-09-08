@@ -103,9 +103,6 @@
 
 /* ========== HIGH SCORE ========== */
 
-.highscore-label-top3 {
-
-
 .label-score-top  {
     -fx-font-family: 'Arial', sans-serif;
     -fx-font-size: 18px;
@@ -114,11 +111,6 @@
     -fx-padding: 8 0 8 0;
 }
 
-
-.highscore-label-normal {
-    -fx-font-family: 'Arial', sans-serif;
-    -fx-font-size: 16px;
-    -fx-text-fill: #E0E0E0;
 .label-score  {
     -fx-font-family: 'Arial', sans-serif;
     -fx-font-size: 16px;
