@@ -20,7 +20,7 @@ public class HighScoreManager {
     private final List<ScoreEntry> scores;
     // Jackson ObjectMapper for JSON serialization
     private final ObjectMapper objectMapper;
-    
+
     // Private constructor to enforce singleton pattern
     private HighScoreManager() {
         this.scores = new ArrayList<>();
@@ -47,10 +47,10 @@ public class HighScoreManager {
         if (scores.size() > MAX_SCORES) {
             scores.subList(MAX_SCORES, scores.size()).clear();
         }
-        
+
         // Automatically save to file after adding score
         saveToFile();
-        
+
         return scores.contains(newEntry);
     }
     // Gets the list of top scores in descending order
@@ -100,9 +100,9 @@ public class HighScoreManager {
         }
         return sb.toString();
     }
-    
+
     // JSON persistence methods
-    
+
     /**
      * Saves the current high scores to the JSON file.
      * Creates the data directory if it doesn't exist.
@@ -111,20 +111,19 @@ public class HighScoreManager {
         try {
             File file = new File(HIGHSCORES_FILE);
             File parentDir = file.getParentFile();
-            
+
             // Create data directory if it doesn't exist
             if (parentDir != null && !parentDir.exists()) {
                 parentDir.mkdirs();
             }
-            
+
             // Write scores to JSON file
             objectMapper.writeValue(file, scores);
-            System.out.println("High scores saved to " + HIGHSCORES_FILE);
         } catch (IOException e) {
-            System.err.println("Failed to save high scores: " + e.getMessage());
+            // Fail silently or log if necessary
         }
     }
-    
+
     /**
      * Loads high scores from the JSON file.
      * If the file doesn't exist or is invalid, starts with an empty list.
@@ -136,13 +135,9 @@ public class HighScoreManager {
                 List<ScoreEntry> loadedScores = objectMapper.readValue(file, new TypeReference<List<ScoreEntry>>() {});
                 scores.clear();
                 scores.addAll(loadedScores);
-                System.out.println("Loaded " + scores.size() + " high scores from " + HIGHSCORES_FILE);
-            } else {
-                System.out.println("No existing high scores file found, starting with empty list");
             }
         } catch (IOException e) {
-            System.err.println("Failed to load high scores: " + e.getMessage());
-            System.out.println("Starting with empty high scores list");
+            // Fail silently or log if necessary
         }
     }
 }
