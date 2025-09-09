@@ -20,7 +20,12 @@ public class PlayingState implements PlayState {
                 c.setState(new GameOverState());
                 return;
             }
-            b.clearFullLines();
+            int linesCleared = b.clearFullLines();
+            if (linesCleared > 0) {
+                // Standard Tetris scoring: 40 * (level + 1) for single line, 100 * (level + 1) for double, etc.
+                int points = linesCleared * 40 * (1 + linesCleared - 1);
+                c.addScore(points);
+            }
             if (!b.newPiece()) c.setState(new GameOverState());
         }
     }
@@ -33,7 +38,12 @@ public class PlayingState implements PlayState {
             case SOFT_DROP  -> b.softDropStep();
             case HARD_DROP  -> {
                 b.hardDrop();
-                b.clearFullLines();
+                int linesCleared = b.clearFullLines();
+                if (linesCleared > 0) {
+                    // Standard Tetris scoring: 40 * (level + 1) for single line, 100 * (level + 1) for double, etc.
+                    int points = linesCleared * 40 * (1 + linesCleared - 1);
+                    c.addScore(points);
+                }
                 if (!b.newPiece()) c.setState(new GameOverState());
             }
             case ROTATE_CW  -> b.rotateCW();
@@ -41,7 +51,7 @@ public class PlayingState implements PlayState {
     }
 
     @Override public void togglePause(GameController c) { c.setState(new PausedState()); }
-    @Override public void restart(GameController c) { c.setState(new PlayingState()); c.board().reset(); start(c); }
+    @Override public void restart(GameController c) { c.setState(new PlayingState()); c.board().reset(); c.resetScore(); start(c); }
     @Override public void reset(GameController c) { c.board().reset(); }  // keep playing after reset
     @Override public GameState uiState() { return GameState.PLAY; }
 }

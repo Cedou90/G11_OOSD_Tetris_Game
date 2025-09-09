@@ -10,12 +10,22 @@ import tetris.model.IGameBoard;
 public class GameController implements IGameController {
     private final IGameBoard board;
     private PlayState state = new PlayingState();
+    private int score = 0;
 
     public GameController(IGameBoard board) {this.board = board;}
 
     public void setState(PlayState next) { this.state = next; }
     public PlayState getState() { return state; }
 
+    public int getScore() { return score; }
+    
+    public void addScore(int points) { 
+        score += points; 
+    }
+    
+    public void resetScore() { 
+        score = 0; 
+    }
 
     @Override public IGameBoard board() {return board;}
     @Override public GameState state() {return state.uiState();}
