@@ -3,14 +3,11 @@ package tetris.view;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.Slider;
+import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
-import tetris.setting.ConfigManager;
-import tetris.setting.GameSetting;
+import tetris.controller.config.ConfigurationController;
+import tetris.dto.GameSettingsData;
 
 import java.net.URL;
 import java.util.function.Consumer;
@@ -24,11 +21,15 @@ public class Configuration {
     private static final double CONTROL_SPACING = 8;
     private static final double SLIDER_WIDTH = 400;
 
-    private final GameSetting settings;
+    private final ConfigurationController configController;
+    private final GameSettingsData settingsData; // UI-safe DTO access
     private final Runnable onBack;
 
-    public Configuration(GameSetting settings, Runnable onBack) {
-        this.settings = settings;
+    private HBox playerTwoRow;
+
+    public Configuration(ConfigurationController configController, Runnable onBack) {
+        this.configController = configController;
+        this.settingsData = configController.getSettingsData(); // UI-safe DTO access
         this.onBack = onBack;
     }
 
@@ -41,7 +42,7 @@ public class Configuration {
         Label title = new Label("CONFIGURATION");
         title.getStyleClass().add("label-title");
 
-        // === sliders ===
+        // === Game Settings (sliders) ===
         VBox slidersBox = new VBox(CONTROL_SPACING);
         slidersBox.setAlignment(Pos.CENTER_LEFT);
         slidersBox.getStyleClass().add("box-section");
@@ -51,40 +52,34 @@ public class Configuration {
 
         // Field width
         Label widthLabel = createFieldLabel("Field Width (No of cells):");
-        Slider widthSlider = createStyledSlider(5, 15, settings.getFieldWidth());
+        Slider widthSlider = createStyledSlider(5, 15, settingsData.fieldWidth());
         Label widthValueLabel = createValueLabel(widthSlider.getValue());
         widthSlider.valueProperty().addListener((obs, o, v) -> {
             int val = v.intValue();
             widthValueLabel.setText(String.format("%.0f", v));
-            settings.setFieldWidth(val);
-            System.out.println("[UI] width -> " + val);
-            ConfigManager.save(settings);
+            configController.updateFieldWidth(val);
         });
         HBox widthControlBox = row(widthSlider, widthValueLabel);
 
         // Field height
         Label heightLabel = createFieldLabel("Field Height (No of cells):");
-        Slider heightSlider = createStyledSlider(15, 30, settings.getFieldHeight());
+        Slider heightSlider = createStyledSlider(15, 30, settingsData.fieldHeight());
         Label heightValueLabel = createValueLabel(heightSlider.getValue());
         heightSlider.valueProperty().addListener((obs, o, v) -> {
             int val = v.intValue();
             heightValueLabel.setText(String.format("%.0f", v));
-            System.out.println("[UI] height -> " + val);
-            settings.setFieldHeight(val);
-            ConfigManager.save(settings);
+            configController.updateFieldHeight(val);
         });
         HBox heightControlBox = row(heightSlider, heightValueLabel);
 
         // Level
         Label levelLabel = createFieldLabel("Game Level:");
-        Slider levelSlider = createStyledSlider(1, 10, settings.getLevel());
+        Slider levelSlider = createStyledSlider(1, 10, settingsData.level());
         Label levelValueLabel = createValueLabel(levelSlider.getValue());
         levelSlider.valueProperty().addListener((obs, o, v) -> {
             int val = v.intValue();
             levelValueLabel.setText(String.format("%.0f", v));
-            System.out.println("[UI] level -> " + val);
-            settings.setLevel(val);
-            ConfigManager.save(settings);
+            configController.updateLevel(val);
         });
         HBox levelControlBox = row(levelSlider, levelValueLabel);
 
@@ -95,7 +90,7 @@ public class Configuration {
                 levelLabel, levelControlBox
         );
 
-        // === checkboxes ===
+        // === Game Options (checkboxes) ===
         VBox checkboxBox = new VBox(CONTROL_SPACING);
         checkboxBox.setAlignment(Pos.CENTER_LEFT);
         checkboxBox.getStyleClass().add("box-section");
@@ -103,42 +98,66 @@ public class Configuration {
         Label optionsTitle = new Label("Game Options");
         optionsTitle.getStyleClass().add("label-section");
 
-        HBox musicControlBox  = makeToggle("Music", settings.isMusicOn(),
-                isSel -> { settings.setMusicOn(isSel); ConfigManager.save(settings); });
+        HBox musicControlBox = makeToggle("Music", settingsData.musicOn(),
+                isSel -> configController.updateMusicSetting(isSel));
 
-        HBox soundControlBox  = makeToggle("Sound Effect", settings.isSfxOn(),
-                isSel -> { settings.setSfxOn(isSel); ConfigManager.save(settings); });
+        HBox soundControlBox = makeToggle("Sound Effect", settingsData.sfxOn(),
+                isSel -> configController.updateSfxSetting(isSel));
 
-        HBox aiControlBox     = makeToggle("AI Play", settings.isAiOn(),
-                isSel -> { settings.setAiOn(isSel); ConfigManager.save(settings); });
-
-        HBox extendControlBox = makeToggle("Extend Mode", settings.isExtendOn(),
-                isSel -> { settings.setExtendOn(isSel); ConfigManager.save(settings); });
+        HBox extendControlBox = makeToggle("Extend Mode", settingsData.extendOn(),
+                isSel -> {
+                    configController.updateExtendSetting(isSel);
+                    if (playerTwoRow != null) playerTwoRow.setDisable(!isSel);
+                });
 
         checkboxBox.getChildren().addAll(
-                optionsTitle, musicControlBox, soundControlBox, aiControlBox, extendControlBox
+                optionsTitle, musicControlBox, soundControlBox, extendControlBox
         );
 
-        // Back button
+        // === Player Options (radio buttons) ===
+        VBox playerTypeBox = new VBox(CONTROL_SPACING);
+        playerTypeBox.setAlignment(Pos.CENTER_LEFT);
+        playerTypeBox.getStyleClass().add("box-section");
+
+        Label playerOptionsTitle = new Label("Player Options");
+        playerOptionsTitle.getStyleClass().add("label-section");
+
+        HBox playerOneRow = buildPlayerTypeRow(
+                "Player One Type:",
+                settingsData.playerOneType(),
+                ptString -> configController.updatePlayerOneType(ptString)
+        );
+        playerTwoRow = buildPlayerTypeRow(
+                "Player Two Type:",
+                settingsData.playerTwoType(),
+                ptString -> configController.updatePlayerTwoType(ptString)
+        );
+        playerTwoRow.setDisable(!settingsData.extendOn()); // Disable when extend mode is OFF
+
+        playerTypeBox.getChildren().addAll(playerOptionsTitle, playerOneRow, playerTwoRow);
+
+        // Back
         Button button_back = new Button("Back");
         button_back.setPrefSize(BUTTON_WIDTH, BUTTON_HEIGHT);
         button_back.getStyleClass().add("styled-button");
         button_back.setOnAction(e -> onBack.run());
 
-        layout.getChildren().addAll(title, slidersBox, checkboxBox, button_back);
+        // Layout
+        layout.getChildren().addAll(title, slidersBox, checkboxBox, playerTypeBox, button_back);
 
-        BorderPane root = new BorderPane();
-        root.setCenter(layout);
+        BorderPane root = new BorderPane(layout);
 
-        Scene scene = new Scene(root, 500, 600);
-
+        Scene scene = new Scene(root, 500, 730);
         URL css = getClass().getResource("/css/Style.css");
         if (css != null) scene.getStylesheets().add(css.toExternalForm());
         else root.setStyle("-fx-background-color: linear-gradient(to bottom, #263238, #37474F);");
 
         stage.setScene(scene);
         stage.setTitle("Configuration");
-        stage.setOnCloseRequest(evt -> { evt.consume(); onBack.run(); });
+        stage.setOnCloseRequest(evt -> {
+            evt.consume();
+            onBack.run();
+        });
         stage.show();
     }
 
@@ -148,11 +167,13 @@ public class Configuration {
         label.getStyleClass().add("label-field");
         return label;
     }
+
     private Label createValueLabel(double initialValue) {
         Label label = new Label(String.format("%.0f", initialValue));
         label.getStyleClass().add("label-value");
         return label;
     }
+
     private Slider createStyledSlider(double min, double max, double value) {
         Slider slider = new Slider(min, max, value);
         slider.setShowTickLabels(true);
@@ -163,6 +184,7 @@ public class Configuration {
         slider.setPrefWidth(SLIDER_WIDTH);
         return slider;
     }
+
     private HBox row(Slider s, Label v) {
         HBox box = new HBox(CONTROL_SPACING);
         box.setAlignment(Pos.CENTER_LEFT);
@@ -175,7 +197,6 @@ public class Configuration {
         return box;
     }
 
-    // Toggle with callback
     private HBox makeToggle(String text, boolean initialSelected, Consumer<Boolean> onChange) {
         HBox controlBox = new HBox(CONTROL_SPACING);
         controlBox.setAlignment(Pos.CENTER_LEFT);
@@ -196,8 +217,46 @@ public class Configuration {
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-
         controlBox.getChildren().addAll(checkBox, spacer, status);
         return controlBox;
+    }
+
+    private HBox buildPlayerTypeRow(String labelText, String currentType, Consumer<String> onChange) {
+        HBox row = new HBox(CONTROL_SPACING);
+        row.setAlignment(Pos.CENTER_LEFT);
+
+        Label label = new Label(labelText);
+        label.getStyleClass().add("label-field");
+
+        RadioButton rbHuman = new RadioButton("Human   ");
+        RadioButton rbAI = new RadioButton("AI   ");
+        RadioButton rbExternal = new RadioButton("External  ");
+
+        rbHuman.getStyleClass().add("label-field");
+        rbAI.getStyleClass().add("label-field");
+        rbExternal.getStyleClass().add("label-field");
+
+        ToggleGroup tg = new ToggleGroup();
+        rbHuman.setToggleGroup(tg);
+        rbAI.setToggleGroup(tg);
+        rbExternal.setToggleGroup(tg);
+
+        switch (currentType) {
+            case "AI" -> rbAI.setSelected(true);
+            case "EXTERNAL" -> rbExternal.setSelected(true);
+            default -> rbHuman.setSelected(true);
+        }
+
+        tg.selectedToggleProperty().addListener((obs, oldT, newT) -> {
+            if (newT == null) return;
+            if (newT == rbHuman) onChange.accept("HUMAN");
+            else if (newT == rbAI) onChange.accept("AI");
+            else onChange.accept("EXTERNAL");
+        });
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        row.getChildren().addAll(label, spacer, rbHuman, rbAI, rbExternal);
+        return row;
     }
 }

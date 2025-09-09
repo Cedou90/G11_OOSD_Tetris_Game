@@ -20,12 +20,9 @@ public class PlayingState implements PlayState {
                 c.setState(new GameOverState());
                 return;
             }
-            int linesCleared = b.clearFullLines();
-            if (linesCleared > 0) {
-                // Standard Tetris scoring: 40 * (level + 1) for single line, 100 * (level + 1) for double, etc.
-                int points = linesCleared * 40 * (1 + linesCleared - 1);
-                c.addScore(points);
-            }
+            // Clear full lines and record count for scoring
+            int cleared = b.clearFullLines();
+            c.setClearedLinesLastTick(cleared);
             if (!b.newPiece()) c.setState(new GameOverState());
         }
     }
@@ -37,21 +34,22 @@ public class PlayingState implements PlayState {
             case MOVE_RIGHT -> b.moveRight();
             case SOFT_DROP  -> b.softDropStep();
             case HARD_DROP  -> {
-                b.hardDrop();
-                int linesCleared = b.clearFullLines();
-                if (linesCleared > 0) {
-                    // Standard Tetris scoring: 40 * (level + 1) for single line, 100 * (level + 1) for double, etc.
-                    int points = linesCleared * 40 * (1 + linesCleared - 1);
-                    c.addScore(points);
+                b.hardDrop(); // Drop piece to bottom
+                // Now handle locking and line clearing consistently with normal tick
+                if (!b.lockCurrent()) {
+                    c.setState(new GameOverState());
+                    return;
                 }
+                int cleared = b.clearFullLines();
+                c.setClearedLinesLastTick(cleared);
                 if (!b.newPiece()) c.setState(new GameOverState());
             }
             case ROTATE_CW  -> b.rotateCW();
         }
     }
 
-    @Override public void togglePause(GameController c) { c.setState(new PausedState()); }
-    @Override public void restart(GameController c) { c.setState(new PlayingState()); c.board().reset(); c.resetScore(); start(c); }
+    @Override public void togglePause(GameController c) { c.setState(new PausedState(this)); }
+    @Override public void restart(GameController c) { c.setState(new PlayingState()); c.board().reset(); start(c); }
     @Override public void reset(GameController c) { c.board().reset(); }  // keep playing after reset
     @Override public GameState uiState() { return GameState.PLAY; }
 }
