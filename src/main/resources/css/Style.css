@@ -36,6 +36,12 @@
     -fx-padding: 0 0 0 10;
 }
 
+.label-author {
+    -fx-font-family: 'Arial', sans-serif;
+    -fx-font-size: 14px;
+    -fx-text-fill: #B0BEC5;
+    -fx-padding: 20 0 0 0;
+}
 /* ========== BUTTONS ========== */
 .styled-button {
     -fx-font-family: 'Arial', sans-serif;
