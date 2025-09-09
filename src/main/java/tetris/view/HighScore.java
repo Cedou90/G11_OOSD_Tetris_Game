@@ -10,8 +10,8 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import tetris.score.HighScoreManager;
-import tetris.score.ScoreEntry;
+import tetris.model.score.HighScoreManager;
+import tetris.model.score.ScoreEntry;
 
 public class HighScore {
 
