@@ -1,10 +1,10 @@
 [ {
-  "playerName" : "TestPlayer1",
-  "score" : 5000
+  "playerName" : "Player",
+  "score" : 7200
 }, {
-  "playerName" : "TestPlayer2",
-  "score" : 3500
+  "playerName" : "TestPlayer",
+  "score" : 7200
 }, {
-  "playerName" : "TestPlayer3",
-  "score" : 2800
+  "playerName" : "Player",
+  "score" : 600
 } ]
