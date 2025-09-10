@@ -13,6 +13,7 @@ public class GameSetting {
     private boolean sfxOn    = true;
     private boolean extendOn = false;
 
+    private int players = 1;
     private PlayerType playerOneType = PlayerType.HUMAN;
     private PlayerType playerTwoType = PlayerType.HUMAN;
 
@@ -31,9 +32,11 @@ public class GameSetting {
     public boolean isSfxOn()     { return sfxOn; }
     public void setSfxOn(boolean v) { this.sfxOn = v; }
 
-
     public boolean isExtendOn()  { return extendOn; }
     public void setExtendOn(boolean v) { this.extendOn = v; }
+
+    public int getPlayers() { return players; }
+    public void setPlayers(int players) { this.players = Math.max(1, Math.min(players, 2)); }
 
     public PlayerType getPlayerOneType() { return playerOneType; }
     public void setPlayerOneType(PlayerType t) { this.playerOneType = t; }

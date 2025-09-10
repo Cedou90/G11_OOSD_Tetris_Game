@@ -1,7 +1,5 @@
 package tetris;
 
-import java.util.Optional;
-
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -15,8 +13,6 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import tetris.controller.config.ConfigurationController;
-import tetris.controller.event.GameEventHandler;
-import tetris.controller.game.GameController;
 import tetris.factory.GameFactory;
 import tetris.model.setting.ConfigManager;
 import tetris.model.setting.GameSetting;
@@ -24,6 +20,8 @@ import tetris.view.Configuration;
 import tetris.view.GameView;
 import tetris.view.HighScore;
 import tetris.view.SplashWindow;
+
+import java.util.Optional;
 
 public class Main extends Application {
 
@@ -55,9 +53,9 @@ public class Main extends Application {
             primaryStage.hide();
 
             // Create controllers and event handler using factory
-            GameController gameController = GameFactory.createGameController(settings);
-            GameEventHandler eventHandler = GameFactory.createGameEventHandler(gameController, settings);
-            GameView gameView = GameFactory.createGameView(primaryStage, eventHandler, settings,
+            GameView gameView = GameFactory.createGameViewForSettings(
+                    primaryStage,
+                    settings,
                     () -> showMainMenu(primaryStage)
             );
             gameView.startGame();
