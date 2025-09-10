@@ -1,7 +1,5 @@
 package tetris.view;
 
-import java.util.Optional;
-
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.VPos;
@@ -24,6 +22,8 @@ import tetris.dto.GameStateData;
 import tetris.dto.TetrominoData;
 import tetris.viewmodel.GameViewModel;
 
+import java.util.Optional;
+
 /**
  * GameView : connecting user input and the game logic (GameController) to the on-screen rendering.
  * startGame() : Set Scene, key event handler, play game
@@ -44,40 +44,60 @@ public class GameView {
     private static final int PADDING = 12;     // Padding around the board
 
     private final Stage stage;
-    private final GameEventHandler eventHandler;
     private final GameSettingsData settings; // UI-safe data
-    private final Canvas canvas;
+
+    // Support multiple handlers (Player 1 + Player 2)
+    private final GameEventHandler p1Handler;
+    private final GameEventHandler p2Handler;
+    private final Canvas p1Canvas;
+    private final Canvas p2Canvas;
+
     private final GameLoop loop;
     private final Runnable onExitToMenu;
     private final GameViewModel viewModel;
 
 
     //GameView with size canvas from dynamic board, build loop once using level
-    public GameView(Stage stage, GameEventHandler eventHandler, GameSettingsData settings, Runnable onExitToMenu) {
+    public GameView(Stage stage, GameEventHandler p1Handler,GameEventHandler p2Handler, GameSettingsData settings, Runnable onExitToMenu) {
         this.stage = stage;
-        this.eventHandler = eventHandler;
+        this.p1Handler = p1Handler;
+        this.p2Handler = p2Handler;
         this.settings = settings;
         this.onExitToMenu = onExitToMenu;
         this.viewModel = new GameViewModel(settings);
 
         // Canvas size based on board dimensions (dynamic) - get from eventHandler
-        GameViewModel.CanvasDimensions dimensions = viewModel.calculateCanvasDimensions(
-                eventHandler.getBoardWidth(), eventHandler.getBoardHeight(), TILE, PADDING);
-        this.canvas = new Canvas(dimensions.width, dimensions.height);
+        GameViewModel.CanvasDimensions d1 = viewModel.calculateCanvasDimensions(
+                p1Handler.getBoardWidth(), p1Handler.getBoardHeight(), TILE, PADDING);
+        this.p1Canvas = new Canvas(d1.width, d1.height);
+
+        if (isTwoPlayer()) {
+            GameViewModel.CanvasDimensions d2 = viewModel.calculateCanvasDimensions(
+                    p2Handler.getBoardWidth(), p2Handler.getBoardHeight(), TILE, PADDING);
+            this.p2Canvas = new Canvas(d2.width, d2.height);
+        } else {
+            this.p2Canvas = null;
+        }
 
         // Game loop: Every drop interval (default 500ms) → eventHandler.tick() → draw()
         long interval = viewModel.calculateDropInterval(settings.level());
         this.loop = new GameLoop(interval) {
             @Override protected void update() {
                 // Game update through proper event handler
-                eventHandler.tick();
-                
+                p1Handler.tick();
+                if (isTwoPlayer()) p2Handler.tick();
+            }
+
                 // Check if lines were cleared and play sound
                 // This will be handled automatically by the controller layer
+            @Override protected void render() {
+                draw(p1Canvas, p1Handler);
+                if (isTwoPlayer()) draw(p2Canvas, p2Handler);
             }
-            @Override protected void render() { draw(); }
         };
     }
+    private boolean isTwoPlayer() { return p2Handler != null; }
+
 
     public Scene buildScreen() {
         Button backBtn = new Button("Back");
@@ -88,45 +108,53 @@ public class GameView {
         bottomBar.setPadding(new Insets(8));
 
         BorderPane root = new BorderPane();
-        root.setCenter(canvas);
-        root.setBottom(bottomBar);
 
-        Scene scene = new Scene(root, canvas.getWidth(), canvas.getHeight() + 40);    // added 40 to fit back button
-        stage.setTitle("Tetris - Play");
+        if (isTwoPlayer()) {
+            HBox boards = new HBox(16);
+            boards.setAlignment(Pos.CENTER);
+            boards.getChildren().addAll(p1Canvas, p2Canvas);
+            root.setCenter(boards);
 
-        //escape (askExitToMenu()) on screen close button
-        stage.setOnCloseRequest(evt -> {
-            evt.consume();
-            askExitToMenu();
-        });
+            double w = p1Canvas.getWidth() + p2Canvas.getWidth() + 16 + 32;
+            double h = Math.max(p1Canvas.getHeight(), p2Canvas.getHeight()) + 40;
+            Scene scene = new Scene(root, w, h);
+            root.setBottom(bottomBar);
+            wireInput(scene);
+            stage.setTitle("Tetris - Play (2P)");
+            stage.setOnCloseRequest(evt -> { evt.consume(); askExitToMenu(); });
+            return scene;
+        } else {
+            root.setCenter(p1Canvas);
+            root.setBottom(bottomBar);
+            Scene scene = new Scene(root, p1Canvas.getWidth(), p1Canvas.getHeight() + 40);
+            wireInput(scene);
+            stage.setTitle("Tetris - Play");
+            stage.setOnCloseRequest(evt -> { evt.consume(); askExitToMenu(); });
+            return scene;
+        }
+    }
 
-        // Keyboard input handling
+    // Keyboard input handling
+    private void wireInput(Scene scene) {
         scene.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
             Action action = switch (e.getCode()) {
-                case LEFT   -> Action.MOVE_LEFT;
-                case RIGHT  -> Action.MOVE_RIGHT;
-                case UP     -> Action.ROTATE_CW;
-                case DOWN   -> Action.SOFT_DROP;
-                case SPACE  -> Action.HARD_DROP;
-                default     -> null;
+                case LEFT -> Action.MOVE_LEFT;
+                case RIGHT -> Action.MOVE_RIGHT;
+                case UP -> Action.ROTATE_CW;
+                case DOWN -> Action.SOFT_DROP;
+                case SPACE -> Action.HARD_DROP;
+                default -> null;
             };
 
+            // Block human input during AI mode
             if (action != null) {
-                // Block human input during AI mode
-                if (eventHandler.isAIActive()) {
-                    e.consume(); // Ignore the input
-                    return;
-                }
-                
-                eventHandler.handlePlayerAction(action);
-
+                if (p1Handler.isAIActive()) { e.consume(); return; }
+                p1Handler.handlePlayerAction(action);
                 // Sound effects handled by event handler
-                if (action == Action.MOVE_LEFT || action == Action.MOVE_RIGHT || action == Action.ROTATE_CW) {
-                    eventHandler.playMoveTurnSound();
-                }
-
-                draw();
-                e.consume();
+                if (action == Action.MOVE_LEFT || action == Action.MOVE_RIGHT || action == Action.ROTATE_CW)
+                    p1Handler.playMoveTurnSound();
+                renderOnce();
+                e.consume(); // Ignore the input
                 return;
             }
 
@@ -134,62 +162,73 @@ public class GameView {
                 case P -> togglePause();
                 case R -> {
                     // Save current score before restarting
-                    eventHandler.saveCurrentScore();
-                    eventHandler.restartGame();
+                    p1Handler.saveCurrentScore();
+                    p1Handler.restartGame();
+                    if (isTwoPlayer()) {
+                        p2Handler.saveCurrentScore();
+                        p2Handler.restartGame();
+                    }
                     loop.start();
-                    draw();
+                    renderOnce();
                 }
-                case M -> {
-                    eventHandler.toggleMusic();
-                    draw();
-                }
-                case S -> {
-                    eventHandler.toggleSfx();
-                    draw();
-                }
+                case M -> { p1Handler.toggleMusic(); renderOnce(); }
+                case S -> { p1Handler.toggleSfx(); renderOnce(); }
                 case ESCAPE -> askExitToMenu();
-                default -> { /* ignore */ }
+                default -> {}
             }
-            draw();
             e.consume();
         });
-
-        return scene;
     }
+
+    private void renderOnce() {
+        draw(p1Canvas, p1Handler);
+        if (isTwoPlayer()) draw(p2Canvas, p2Handler);
+    }
+
+
 
     public void startGame(){
         stage.setScene(buildScreen());
-        eventHandler.startGame();
+
+        p1Handler.startGame();
+        if (isTwoPlayer()) p2Handler.startGame();
+
         stage.show();
 
         // Audio handled by event handler
-        eventHandler.startBackgroundMusic();
+        p1Handler.startBackgroundMusic();
 
         loop.start();
-        draw();
+        renderOnce();
     }
+
 
     // Toggles pause state and updates the game loop accordingly.
     private void togglePause() {
-        eventHandler.pauseGame();
-        GameStateData gameData = eventHandler.getGameStateData();
+        // Pause/resume both to keep them in sync
+        p1Handler.pauseGame();
+        if (isTwoPlayer()) p2Handler.pauseGame();
+
+        GameStateData gameData = p1Handler.getGameStateData();
         if (gameData.gameState() == GameStateData.GameState.PAUSE) {
             loop.stop();
         } else if (gameData.gameState() == GameStateData.GameState.PLAY) {
             loop.start();
         }
-        draw(); // Update overlay text
+        renderOnce(); // Update overlay text
     }
+
 
     // Shows confirmation dialog before returning to main menu.
     private void askExitToMenu() {
-        GameStateData gameData = eventHandler.getGameStateData();
+        GameStateData gameData = p1Handler.getGameStateData();
         boolean wasPlaying = (gameData.gameState() == GameStateData.GameState.PLAY);
 
         if (wasPlaying) {             // Pause game before show alert
-            eventHandler.pauseGame(); // PLAY -> PAUSE
+            p1Handler.pauseGame();    // PLAY -> PAUSE
+            if (isTwoPlayer()) p2Handler.pauseGame();
             loop.stop();
-            draw();
+            renderOnce();
         }
 
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
@@ -201,21 +240,26 @@ public class GameView {
         if (result.isPresent() && result.get() == ButtonType.OK) {
             loop.stop();
             // Save score before exiting to menu
-            eventHandler.saveCurrentScore();
-            eventHandler.resetGame();
-            eventHandler.stopBackgroundMusic();
+            p1Handler.saveCurrentScore();
+            p1Handler.resetGame();
+            if (isTwoPlayer()) {
+                p2Handler.saveCurrentScore();
+                p2Handler.resetGame();
+            }
+            p1Handler.stopBackgroundMusic();
             onExitToMenu.run();
         } else {                // Press Exit -> select No
             if (wasPlaying) {   // Press Exit While playing game
-                eventHandler.pauseGame(); // PAUSE -> PLAY
+                p1Handler.pauseGame(); // PAUSE -> PLAY
+                if (isTwoPlayer()) p2Handler.pauseGame();
                 loop.start();
-                draw();
+                renderOnce();
             }
         }
     }
 
     // ===== Drawing methods =====
-    private void draw() {
+    private void draw(Canvas canvas, GameEventHandler handler) {
         GraphicsContext g = canvas.getGraphicsContext2D();
         double W = canvas.getWidth(), H = canvas.getHeight();
 
@@ -223,9 +267,9 @@ public class GameView {
         g.setFill(GameViewModel.BACKGROUND_COLOR);
         g.fillRect(0, 0, W, H);
 
-        GameStateData gameData = eventHandler.getGameStateData();
-        int BW = eventHandler.getBoardWidth();
-        int BH = eventHandler.getBoardHeight();
+        GameStateData gameData = handler.getGameStateData();
+        int BW = handler.getBoardWidth();
+        int BH = handler.getBoardHeight();
 
         // Board background frame
         double bx = PADDING, by = PADDING;
@@ -235,25 +279,25 @@ public class GameView {
         g.fillRoundRect(bx - 4, by - 4, bw + 8, bh + 8, 12, 12);
 
         // Draw fixed and current blocks
-        drawBoardCells(g, bx, by, gameData);
+        drawBoardCells(g, bx, by, gameData, BW, BH);
 
         // Game state overlay
         switch (gameData.gameState()) {
-            case PAUSE -> drawCenteredOverlay(g, "Game is paused.\nPress P to continue. ");
+            case PAUSE -> drawCenteredOverlay(g, canvas, "Game is paused.\nPress P to continue. ");
             case GAME_OVER -> {
-                drawCenteredOverlay(g, "GAME OVER\nPress R to Restart\nESC to Menu");
+                drawCenteredOverlay(g, canvas, "GAME OVER\nPress R to Restart\nESC to Menu");
                 loop.stop();
             }
             default -> { /* PLAY: no overlay */ }
         }
 
-        drawHud(g);
+        drawHud(g, canvas, gameData.currentScore());
     }
 
+
     // Draws both fixed cells and the current tetromino.
-    private void drawBoardCells(GraphicsContext g, double bx, double by, GameStateData gameData) {
-        int BW = eventHandler.getBoardWidth();
-        int BH = eventHandler.getBoardHeight();
+    private void drawBoardCells(GraphicsContext g, double bx, double by,
+                                GameStateData gameData, int BW, int BH) {
         int[][] cells = gameData.boardCells();
 
         // Fixed blocks
@@ -308,7 +352,7 @@ public class GameView {
     /**
      * Draws an overlay with centered text (e.g., "PAUSED", "GAME OVER").
      */
-    private void drawCenteredOverlay(GraphicsContext g, String text) {
+    private void drawCenteredOverlay(GraphicsContext g, Canvas canvas, String text) {
         g.setFill(GameViewModel.OVERLAY_BACKGROUND);
         g.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
 
@@ -320,9 +364,8 @@ public class GameView {
     }
 
 
-    private void drawHud(GraphicsContext g) {
-        GameStateData gameData = eventHandler.getGameStateData();
-        String label = viewModel.formatHudText(gameData.currentScore());
+    private void drawHud(GraphicsContext g, Canvas canvas, int score) {
+        String label = viewModel.formatHudText(score);
 
         double pad = PADDING;
         double x = pad, y = 6;

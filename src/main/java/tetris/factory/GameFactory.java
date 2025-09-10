@@ -1,17 +1,16 @@
 package tetris.factory;
 
+import javafx.stage.Stage;
 import tetris.controller.config.ConfigurationController;
 import tetris.controller.event.GameEventHandler;
 import tetris.controller.game.GameController;
 import tetris.controller.score.ScoreController;
-import tetris.model.GameBoard;
 import tetris.dto.GameSettingsData;
+import tetris.model.GameBoard;
 import tetris.model.setting.GameSetting;
-import tetris.model.setting.PlayerType;
-import tetris.view.GameView;
 import tetris.view.Configuration;
+import tetris.view.GameView;
 import tetris.view.HighScore;
-import javafx.stage.Stage;
 
 public class GameFactory {
     
@@ -32,10 +31,20 @@ public class GameFactory {
     }
     
     // Creates a new GameView with proper event handling
-    public static GameView createGameView(Stage stage, GameEventHandler eventHandler, 
-                                        GameSetting settings, Runnable onExitToMenu) {
+    public static GameView createGameView(Stage stage,
+                                          GameEventHandler p1Handler,
+                                          GameEventHandler p2Handler, // may be null
+                                          GameSetting settings,
+                                          Runnable onExitToMenu) {
         GameSettingsData settingsData = GameSettingsData.fromGameSetting(settings);
-        return new GameView(stage, eventHandler, settingsData, onExitToMenu);
+        return new GameView(stage, p1Handler, p2Handler, settingsData, onExitToMenu);
+    }
+
+    public static GameView createGameView(Stage stage,
+                                          GameEventHandler handler,
+                                          GameSetting settings,
+                                          Runnable onExitToMenu) {
+        return createGameView(stage, handler, null, settings, onExitToMenu);
     }
     
     // Creates a new Configuration view with proper controller
