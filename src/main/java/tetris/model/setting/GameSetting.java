@@ -17,6 +17,18 @@ public class GameSetting {
     private PlayerType playerOneType = PlayerType.HUMAN;
     private PlayerType playerTwoType = PlayerType.HUMAN;
 
+    public void resetToDefaults() {
+        fieldWidth  = DEFAULT_W;
+        fieldHeight = DEFAULT_H;
+        level       = DEFAULT_LEVEL;
+        musicOn = true;
+        sfxOn   = true;
+        extendOn = false;
+        players = 1;
+        playerOneType = PlayerType.HUMAN;
+        playerTwoType = PlayerType.HUMAN;
+    }
+
     public int  getFieldWidth()  { return fieldWidth; }
     public void setFieldWidth(int w)  { this.fieldWidth = w; }
 

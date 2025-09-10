@@ -32,10 +32,11 @@ public class Main extends Application {
     private static final double MENU_SPACING = 20;
     private static final double TITLE_SPACING = 40;
 
-    private final GameSetting settings = ConfigManager.loadOrDefault();
+    private final GameSetting settings = new GameSetting();
 
     @Override
     public void start(Stage primaryStage){
+        ConfigManager.clear();
         new SplashWindow().show(primaryStage, () -> showMainMenu(primaryStage));
     }
 
