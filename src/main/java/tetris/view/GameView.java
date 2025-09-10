@@ -21,7 +21,7 @@ import tetris.dto.GameSettingsData;
 import tetris.dto.GameStateData;
 import tetris.dto.TetrominoData;
 import tetris.viewmodel.GameViewModel;
-
+import javafx.scene.text.Text;
 import java.util.Optional;
 
 /**
@@ -349,6 +349,43 @@ public class GameView {
         g.strokeRect(pos.x + 0.5, pos.y + 0.5, TILE - 1, TILE - 1); //filled block border
     }
 
+    // === HUD width fix ===
+    private double textWidth(String s, Font f) {
+        Text t = new Text(s);
+        t.setFont(f);
+        return Math.ceil(t.getLayoutBounds().getWidth());
+    }
+    // word-wrap the HUD label into multiple lines that fit maxWidth
+    private java.util.List<String> wrapText(String text, Font font, double maxWidth) {
+        java.util.List<String> lines = new java.util.ArrayList<>();
+        String[] words = text.split(" ");
+        StringBuilder line = new StringBuilder();
+        for (String word : words) {
+            String candidate = (line.length() == 0) ? word : (line + " " + word);
+            if (textWidth(candidate, font) <= maxWidth) {
+                line = new StringBuilder(candidate);
+            } else {
+                if (line.length() == 0) {
+                    // single long token: put it alone to avoid infinite loop
+                    lines.add(word);
+                } else {
+                    lines.add(line.toString());
+                    line = new StringBuilder(word);
+                }
+            }
+        }
+        if (line.length() > 0) lines.add(line.toString());
+        return lines;
+    }
+
+    private Font fitFontToWidth(String text, double maxWidth, Font baseFont) {
+        double w = textWidth(text, baseFont);
+        if (w <= maxWidth) return baseFont;
+        double scale = maxWidth / Math.max(1.0, w);
+        double newSize = Math.max(10, baseFont.getSize() * scale); // don't go smaller than 10
+        return Font.font(baseFont.getFamily(), newSize);
+    }
+
     /**
      * Draws an overlay with centered text (e.g., "PAUSED", "GAME OVER").
      */
@@ -365,20 +402,29 @@ public class GameView {
 
 
     private void drawHud(GraphicsContext g, Canvas canvas, int score) {
-        String label = viewModel.formatHudText(score);
+        String full = viewModel.formatHudText(score);
 
         double pad = PADDING;
         double x = pad, y = 6;
         double w = canvas.getWidth() - pad * 2;
-        double h = 24;
+
+        // === HUD wrap fix ===
+        Font font = Font.font("Arial", 14);
+        java.util.List<String> lines = wrapText(full, font, w - 10);
+        double lineHeight = font.getSize() + 2;
+        double rectHeight = Math.max(24, 4 + lines.size() * lineHeight + 4);
 
         g.setFill(GameViewModel.HUD_BACKGROUND);
-        g.fillRoundRect(x, y, w, h, 10, 10);
+        g.fillRoundRect(x, y, w, rectHeight, 10, 10);
 
         g.setFill(GameViewModel.TEXT_COLOR);
-        g.setFont(Font.font("Arial", 14));
+        g.setFont(font);
         g.setTextAlign(TextAlignment.CENTER);
         g.setTextBaseline(VPos.TOP);
-        g.fillText(label, canvas.getWidth() / 2, y + 4);
+
+        double baseY = y + 4;
+        for (int i = 0; i < lines.size(); i++) {
+            g.fillText(lines.get(i), canvas.getWidth() / 2, baseY + i * lineHeight);
+        }
     }
 }
