@@ -15,8 +15,6 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import tetris.controller.config.ConfigurationController;
-import tetris.controller.event.GameEventHandler;
-import tetris.controller.game.GameController;
 import tetris.factory.GameFactory;
 import tetris.model.setting.ConfigManager;
 import tetris.model.setting.GameSetting;
@@ -34,10 +32,11 @@ public class Main extends Application {
     private static final double MENU_SPACING = 20;
     private static final double TITLE_SPACING = 40;
 
-    private final GameSetting settings = ConfigManager.loadOrDefault();
+    private final GameSetting settings = new GameSetting();
 
     @Override
     public void start(Stage primaryStage){
+        ConfigManager.clear();
         new SplashWindow().show(primaryStage, () -> showMainMenu(primaryStage));
     }
 
@@ -55,9 +54,9 @@ public class Main extends Application {
             primaryStage.hide();
 
             // Create controllers and event handler using factory
-            GameController gameController = GameFactory.createGameController(settings);
-            GameEventHandler eventHandler = GameFactory.createGameEventHandler(gameController, settings);
-            GameView gameView = GameFactory.createGameView(primaryStage, eventHandler, settings,
+            GameView gameView = GameFactory.createGameViewForSettings(
+                    primaryStage,
+                    settings,
                     () -> showMainMenu(primaryStage)
             );
             gameView.startGame();
