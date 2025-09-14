@@ -1,7 +1,5 @@
 package tetris;
 
-import java.util.Optional;
-
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -22,6 +20,8 @@ import tetris.view.Configuration;
 import tetris.view.GameView;
 import tetris.view.HighScore;
 import tetris.view.SplashWindow;
+
+import java.util.Optional;
 
 public class Main extends Application {
 
