@@ -12,10 +12,10 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import tetris.controller.game.GameController;
-import tetris.model.GameBoard;
-import tetris.setting.ConfigManager;
-import tetris.setting.GameSetting;
+import tetris.controller.config.ConfigurationController;
+import tetris.factory.GameFactory;
+import tetris.model.setting.ConfigManager;
+import tetris.model.setting.GameSetting;
 import tetris.view.Configuration;
 import tetris.view.GameView;
 import tetris.view.HighScore;
@@ -32,11 +32,11 @@ public class Main extends Application {
     private static final double MENU_SPACING = 20;
     private static final double TITLE_SPACING = 40;
 
-    //private final GameSetting settings = new GameSetting();
-    private final GameSetting settings = ConfigManager.loadOrDefault();
+    private final GameSetting settings = new GameSetting();
 
     @Override
     public void start(Stage primaryStage){
+        ConfigManager.clear();
         new SplashWindow().show(primaryStage, () -> showMainMenu(primaryStage));
     }
 
@@ -53,31 +53,31 @@ public class Main extends Application {
         Button playButton = createMenuButton("Play", () -> {
             primaryStage.hide();
 
-            // Build board from setting
-            GameController controller = new GameController(
-                    new GameBoard(settings.getFieldWidth(), settings.getFieldHeight())
-            );
-
-            //Pass a "back to menu" callback
-            GameView gameView = new GameView(primaryStage, controller, settings,
+            // Create controllers and event handler using factory
+            GameView gameView = GameFactory.createGameViewForSettings(
+                    primaryStage,
+                    settings,
                     () -> showMainMenu(primaryStage)
             );
             gameView.startGame();
         });
 
         Button configButton = createMenuButton("Configuration", () -> {
-            //pass settings + a "back to menu" callback
-            new Configuration(settings,
+            //Create configuration controller and view
+            ConfigurationController configController = GameFactory.createConfigurationController(settings);
+            Configuration config = GameFactory.createConfiguration(configController,
                     () -> showMainMenu(primaryStage)
-            ).startConfig(primaryStage);
+            );
+            config.startConfig(primaryStage);
         });
 
         Button highScoreButton = createMenuButton("High Score", () -> {
             primaryStage.hide();
             //Pass a "back to menu" callback
-            new HighScore(
+            HighScore highScore = GameFactory.createHighScore(
                     () -> showMainMenu(primaryStage)
-            ).startHighScore(primaryStage);
+            );
+            highScore.startHighScore(primaryStage);
         });
 
         Button exitButton = createMenuButton("Exit", this::showExitConfirmation);
@@ -88,12 +88,7 @@ public class Main extends Application {
 
         // Author credit label
         Label authorLabel = new Label("Author: G11");
-        authorLabel.setStyle(
-            "-fx-font-family: 'Arial', sans-serif;" +
-            "-fx-font-size: 14px;" +
-            "-fx-text-fill: #B0BEC5;" +
-            "-fx-padding: 20 0 0 0;"
-        );
+        authorLabel.getStyleClass().add("label-author");
 
         // Layout containers for proper spacing
         VBox titleContainer = new VBox(TITLE_SPACING);
