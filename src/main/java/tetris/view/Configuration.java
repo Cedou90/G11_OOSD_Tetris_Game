@@ -219,7 +219,6 @@ public class Configuration {
         HBox.setHgrow(spacer, Priority.ALWAYS);
         controlBox.getChildren().addAll(checkBox, spacer, status);
         return controlBox;
-
     }
 
     private HBox buildPlayerTypeRow(String labelText, String currentType, Consumer<String> onChange) {
