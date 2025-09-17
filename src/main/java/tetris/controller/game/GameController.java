@@ -1,7 +1,7 @@
 package tetris.controller.game;
 
 import tetris.common.Action;
-import tetris.common.GameState;
+import tetris.common.UiGameState;
 import tetris.controller.api.IGameController;
 import tetris.controller.score.ScoreController;
 import tetris.controller.state.DefaultPlayStateFactory;
@@ -66,7 +66,7 @@ public class GameController implements IGameController {
 
     // ---- IGameController ----
     @Override public IGameBoard board() { return board; }
-    @Override public GameState state() { return state.uiState(); }
+    @Override public UiGameState state() { return state.uiState(); }
     @Override public void handle(Action action) { state.handle(this, action); }
     @Override public void start() { state.start(this); }
     @Override public void togglePause() { state.togglePause(this); }

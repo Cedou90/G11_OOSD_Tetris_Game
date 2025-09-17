@@ -2,7 +2,7 @@ package tetris.controller.state;
 
 import tetris.controller.ai.AIController;
 import tetris.common.Action;
-import tetris.common.GameState;
+import tetris.common.UiGameState;
 import tetris.controller.game.GameController;
 import tetris.model.IGameBoard;
 import tetris.model.setting.GameSetting;
@@ -191,7 +191,7 @@ public class AIPlayingState implements PlayState {
 
     /** Returns the UI state for display purposes */
     @Override
-    public GameState uiState() {
-        return GameState.PLAY; // Show normal play UI
+    public UiGameState uiState() {
+        return UiGameState.PLAY; // Show normal play UI
     }
 }
