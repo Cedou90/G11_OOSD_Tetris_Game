@@ -48,7 +48,7 @@ public class PlayingState implements PlayState {
         }
     }
 
-    @Override public void togglePause(GameController c) { c.setState(new PausedState(this)); }
+    @Override public void togglePause(GameController c) {c.setState(new PausedState(this, c.getStateFactory())); }
     @Override public void restart(GameController c) { c.setState(new PlayingState()); c.board().reset(); start(c); }
     @Override public void reset(GameController c) { c.board().reset(); }  // keep playing after reset
     @Override public GameState uiState() { return GameState.PLAY; }
