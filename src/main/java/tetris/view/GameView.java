@@ -1,5 +1,7 @@
 package tetris.view;
 
+import java.util.Optional;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.VPos;
@@ -23,8 +25,6 @@ import tetris.dto.GameSettingsData;
 import tetris.dto.GameStateData;
 import tetris.dto.TetrominoData;
 import tetris.viewmodel.GameViewModel;
-
-import java.util.Optional;
 
 /**
  * GameView : connecting user input and the game logic (GameController) to the on-screen rendering.
@@ -99,6 +99,14 @@ public class GameView {
         };
     }
     private boolean isTwoPlayer() { return p2Handler != null; }
+
+    // Set player name in the game event handler
+    public void setPlayerName(String playerName) {
+        p1Handler.setPlayerName(playerName);
+        if (isTwoPlayer()) {
+            p2Handler.setPlayerName(playerName);
+        }
+    }
 
 
     public Scene buildScreen() {
@@ -205,9 +213,7 @@ public class GameView {
                     }
                     case P -> { togglePause(); e.consume(); }
                     case R -> {
-                        p1Handler.saveCurrentScore();
                         p1Handler.restartGame();
-                        p2Handler.saveCurrentScore();
                         p2Handler.restartGame();
                         loop.start();
                         renderOnce();
@@ -244,7 +250,6 @@ public class GameView {
                 switch (e.getCode()) {
                     case P -> togglePause();
                     case R -> {
-                        p1Handler.saveCurrentScore();
                         p1Handler.restartGame();
                         loop.start();
                         renderOnce();
@@ -318,11 +323,9 @@ public class GameView {
 
         if (result.isPresent() && result.get() == ButtonType.OK) {
             loop.stop();
-            // Save score before exiting to menu
-            p1Handler.saveCurrentScore();
+            // Reset game before exiting to menu
             p1Handler.resetGame();
             if (isTwoPlayer()) {
-                p2Handler.saveCurrentScore();
                 p2Handler.resetGame();
             }
             p1Handler.stopBackgroundMusic();
@@ -366,6 +369,8 @@ public class GameView {
             case GAME_OVER -> {
                 drawCenteredOverlay(g, canvas, "GAME OVER\nPress R to Restart\nESC to Menu");
                 loop.stop();
+                // Automatically submit score if eligible (player name was collected before game start)
+                handler.submitStoredScore();
             }
             default -> { /* PLAY */ }
         }
@@ -464,13 +469,6 @@ public class GameView {
         return lines;
     }
 
-    private Font fitFontToWidth(String text, double maxWidth, Font baseFont) {
-        double w = textWidth(text, baseFont);
-        if (w <= maxWidth) return baseFont;
-        double scale = maxWidth / Math.max(1.0, w);
-        double newSize = Math.max(10, baseFont.getSize() * scale); // don't go smaller than 10
-        return Font.font(baseFont.getFamily(), newSize);
-    }
 
     /**
      * Draws an overlay with centered text (e.g., "PAUSED", "GAME OVER").

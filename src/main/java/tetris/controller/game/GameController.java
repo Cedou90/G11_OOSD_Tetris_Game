@@ -91,4 +91,5 @@ public class GameController implements IGameController {
     // ---- Scoring façade ----
     public int getCurrentScore() { return scoreController.getCurrentScore(); }
     public boolean submitFinalScore(String playerName) { return scoreController.submitScore(playerName); }
+    public boolean isEligibleForHighScore(int score) { return scoreController.isEligibleForHighScore(score); }
 }

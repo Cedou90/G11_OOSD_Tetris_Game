@@ -1,13 +1,13 @@
 package tetris.controller.event;
 
 import tetris.common.Action;
+import tetris.common.ConfigManager;
 import tetris.common.UiGameState;
 import tetris.controller.audio.AudioController;
 import tetris.controller.game.GameController;
 import tetris.dto.GameSettingsData;
 import tetris.dto.GameStateData;
 import tetris.dto.TetrominoData;
-import tetris.common.ConfigManager;
 import tetris.model.setting.GameSetting;
 
 /**
@@ -22,6 +22,7 @@ public class GameEventHandler {
     private final GameController gameController;
     private final GameSetting settings;
     private final AudioController audioController;
+    private String playerName = "Player"; // Default player name
 
     public GameEventHandler(GameController gameController, GameSetting settings) {
         this.gameController = gameController;
@@ -82,6 +83,31 @@ public class GameEventHandler {
         }
     }
 
+    // Player name management
+    public void setPlayerName(String name) {
+        this.playerName = (name == null || name.trim().isEmpty()) ? "Player" : name.trim();
+    }
+
+    public String getPlayerName() {
+        return playerName;
+    }
+
+    // Score-related methods for high score management
+    public boolean isEligibleForHighScore(int score) {
+        return gameController.isEligibleForHighScore(score);
+    }
+
+
+    // Submit score with stored player name
+    public boolean submitStoredScore() {
+        int currentScore = gameController.getCurrentScore();
+        // Only submit if score is non-zero and eligible for high scores
+        if (currentScore > 0 && isEligibleForHighScore(currentScore)) {
+            return gameController.submitFinalScore(playerName);
+        }
+        return false;
+    }
+
     // Data access for Views - returns DTOs instead of direct model access
     public GameStateData getGameStateData() {
         TetrominoData currentPiece = TetrominoData.fromTetrominoSafe(
@@ -128,12 +154,5 @@ public class GameEventHandler {
         audioController.stopBackgroundMusic();
     }
     
-    // Save current score to high score manager
-    public void saveCurrentScore() {
-        int currentScore = gameController.getCurrentScore();
-        if (currentScore > 0) {
-            gameController.submitFinalScore("Player");
-        }
-    }
 
 }

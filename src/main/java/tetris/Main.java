@@ -1,5 +1,7 @@
 package tetris;
 
+import java.util.Optional;
+
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -9,19 +11,18 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import tetris.common.ConfigManager;
 import tetris.controller.config.ConfigurationController;
 import tetris.factory.GameFactory;
-import tetris.common.ConfigManager;
 import tetris.model.setting.GameSetting;
 import tetris.view.Configuration;
 import tetris.view.GameView;
 import tetris.view.HighScore;
 import tetris.view.SplashWindow;
-
-import java.util.Optional;
 
 public class Main extends Application {
 
@@ -51,6 +52,28 @@ public class Main extends Application {
 
         // Navigation buttons
         Button playButton = createMenuButton("Play", () -> {
+            // Show player name input dialog before starting the game
+            TextInputDialog nameDialog = new TextInputDialog("Player");
+            nameDialog.setTitle("Player Name");
+            nameDialog.setHeaderText(null); // Remove redundant header
+            nameDialog.setContentText("Please enter your player name:");
+            
+            // Set minimum width to prevent text truncation
+            nameDialog.getDialogPane().setMinWidth(300);
+            
+            
+            Optional<String> result = nameDialog.showAndWait();
+            
+            // If user clicked Cancel, don't start the game
+            if (!result.isPresent()) {
+                return; // Stay on main menu
+            }
+            
+            String playerName = result.get().trim();
+            if (playerName.isEmpty()) {
+                playerName = "Player";
+            }
+            
             primaryStage.hide();
 
             // Create controllers and event handler using factory
@@ -59,6 +82,10 @@ public class Main extends Application {
                     settings,
                     () -> showMainMenu(primaryStage)
             );
+            
+            // Set the player name in the game event handler
+            gameView.setPlayerName(playerName);
+            
             gameView.startGame();
         });
 
