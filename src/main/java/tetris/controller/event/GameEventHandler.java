@@ -23,11 +23,19 @@ public class GameEventHandler {
     private final GameSetting settings;
     private final AudioController audioController;
     private String playerName = "Player"; // Default player name
+    private int playerNumber = 1; // Player number (1 or 2)
 
     public GameEventHandler(GameController gameController, GameSetting settings) {
         this.gameController = gameController;
         this.settings = settings;
         this.audioController = new AudioController();
+    }
+
+    public GameEventHandler(GameController gameController, GameSetting settings, int playerNumber) {
+        this.gameController = gameController;
+        this.settings = settings;
+        this.audioController = new AudioController();
+        this.playerNumber = playerNumber;
     }
 
     // Game control events
@@ -89,7 +97,15 @@ public class GameEventHandler {
     }
 
     public String getPlayerName() {
+        // Show "AI" for AI players in HUD display
+        if (gameController.getPlayerType() == tetris.model.setting.PlayerType.AI) {
+            return "AI";
+        }
         return playerName;
+    }
+
+    public int getPlayerNumber() {
+        return playerNumber;
     }
 
     // Score-related methods for high score management
@@ -141,6 +157,35 @@ public class GameEventHandler {
     // Check if AI is currently active
     public boolean isAIActive() {
         return gameController.getPlayerType() == tetris.model.setting.PlayerType.AI;
+    }
+
+    // Get current level and lines cleared
+    public int getCurrentLevel() {
+        return gameController.getCurrentLevel();
+    }
+
+    public int getTotalLinesCleared() {
+        return gameController.getTotalLinesCleared();
+    }
+
+    public int getCurrentScore() {
+        return gameController.getCurrentScore();
+    }
+
+    public tetris.model.tetromino.TetrominoType getNextTetrominoType() {
+        if (gameController.board() instanceof tetris.model.board.GameBoard gameBoard) {
+            return gameBoard.getNextTetrominoType();
+        }
+        return null;
+    }
+
+    // Get current audio state for real-time HUD updates
+    public boolean isMusicOn() {
+        return settings.isMusicOn();
+    }
+
+    public boolean isSfxOn() {
+        return settings.isSfxOn();
     }
 
     // Audio control for Views
