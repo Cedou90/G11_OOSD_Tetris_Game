@@ -45,6 +45,19 @@ import tetris.viewmodel.GameViewModel;
  * - updateHUD(): Update side panel information in real-time
  */
 
+/**
+ * GameView: Pure UI rendering component following MVC pattern.
+ * 
+ * Responsibilities:
+ * - UI rendering only (Canvas drawing, HUD updates)
+ * - User input forwarding to GameEventHandler
+ * - No direct business logic or game state management
+ * 
+ * MVC Pattern:
+ * - View: This class (pure UI)
+ * - Controller: GameEventHandler (handles user input and business logic)
+ * - Model: GameController + GameBoard (game state and data)
+ */
 public class GameView {
     // ==================== UI CONSTANTS ====================
     private static final int TILE = 30;        // Size of one tile (px)
@@ -101,17 +114,19 @@ public class GameView {
             this.p2SidePanel = null;
         }
 
-        // Game loop: Every drop interval (default 500ms) → eventHandler.tick() → draw()
+        // Game loop: Pure rendering loop - no business logic
         long interval = viewModel.calculateDropInterval(settings.level());
         this.loop = new GameLoop(interval) {
             @Override protected void update() {
+                // Delegate game logic to controllers
                 p1Handler.tick();
                 if (isTwoPlayer()) p2Handler.tick();
             }
 
             @Override protected void render() {
-                draw(p1Canvas, p1Handler);
-                if (isTwoPlayer()) draw(p2Canvas, p2Handler);
+                // Pure UI rendering - no business logic
+                renderGameBoard(p1Canvas, p1Handler);
+                if (isTwoPlayer()) renderGameBoard(p2Canvas, p2Handler);
                 updateHUD();
             }
         };
@@ -292,7 +307,8 @@ public class GameView {
         drawTetrominoInGrid(g, handler.getNextTetrominoType(), 30, 30);
     }
 
-    // ==================== HELPER METHODS ====================
+    // ==================== GAME CONTROL DELEGATION ====================
+    // All game control logic is delegated to GameEventHandler (Controller)
     
     private void pauseBothPlayers() {
         p1Handler.pauseGame();
@@ -369,170 +385,129 @@ public class GameView {
         }
     }
 
-    // Keyboard input handling
+    // ==================== INPUT HANDLING ====================
+    // Pure input forwarding to Controller - no business logic in View
+    
     private void wireInput(Scene scene) {
         scene.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
             if (isTwoPlayer()) {
-                switch (e.getCode()) {
-                    case COMMA -> {
-                        if (!p1Handler.isAIActive()) {
-                            p1Handler.handlePlayerAction(Action.MOVE_LEFT);
-                            p1Handler.playMoveTurnSound();
-                            renderOnce();
-                        }
-                        e.consume();
-                    }
-                    case PERIOD -> {
-                        if (!p1Handler.isAIActive()) {
-                            p1Handler.handlePlayerAction(Action.MOVE_RIGHT);
-                            p1Handler.playMoveTurnSound();
-                            renderOnce();
-                        }
-                        e.consume();
-                    }
-                    case SPACE -> {
-                        if (!p1Handler.isAIActive()) {
-                            p1Handler.handlePlayerAction(Action.SOFT_DROP);
-                            renderOnce();
-                        }
-                        e.consume();
-                    }
-                    case L -> {
-                        if (!p1Handler.isAIActive()) {
-                            p1Handler.handlePlayerAction(Action.ROTATE_CW);
-                            p1Handler.playMoveTurnSound();
-                            renderOnce();
-                        }
-                        e.consume();
-                    }
-                    case LEFT -> {
-                        if (!p2Handler.isAIActive()) {
-                            p2Handler.handlePlayerAction(Action.MOVE_LEFT);
-                            p2Handler.playMoveTurnSound();
-                            renderOnce();
-                        }
-                        e.consume();
-                    }
-                    case RIGHT -> {
-                        if (!p2Handler.isAIActive()) {
-                            p2Handler.handlePlayerAction(Action.MOVE_RIGHT);
-                            p2Handler.playMoveTurnSound();
-                            renderOnce();
-                        }
-                        e.consume();
-                    }
-                    case DOWN -> {
-                        if (!p2Handler.isAIActive()) {
-                            p2Handler.handlePlayerAction(Action.SOFT_DROP);
-                            renderOnce();
-                        }
-                        e.consume();
-                    }
-                    case UP -> {
-                        if (!p2Handler.isAIActive()) {
-                            p2Handler.handlePlayerAction(Action.ROTATE_CW);
-                            p2Handler.playMoveTurnSound();
-                            renderOnce();
-                        }
-                        e.consume();
-                    }
-                    case P -> { togglePause(); e.consume(); }
-                    case R -> {
-                        p1Handler.restartGame();
-                        p2Handler.restartGame();
-                        loop.start();
-                        renderOnce();
-                        e.consume();
-                    }
-                    case M -> { handleAudioToggle('M'); e.consume(); }
-                    case S -> { handleAudioToggle('S'); e.consume(); }
-                    case ESCAPE -> { askExitToMenu(); e.consume(); }
-                    default -> {}
-                }
-
+                handleTwoPlayerInput(e);
             } else {
-                Action action = switch (e.getCode()) {
-                    case LEFT  -> Action.MOVE_LEFT;
-                    case RIGHT -> Action.MOVE_RIGHT;
-                    case UP    -> Action.ROTATE_CW;
-                    case DOWN  -> Action.SOFT_DROP;
-                    case SPACE -> Action.HARD_DROP;
-                    default -> null;
-                };
-
-            // Block human input during AI mode
-            if (action != null) {
-                if (p1Handler.isAIActive()) { e.consume(); return; }
-                p1Handler.handlePlayerAction(action);
-                // Sound effects handled by event handler
-                if (action == Action.MOVE_LEFT || action == Action.MOVE_RIGHT || action == Action.ROTATE_CW)
-                    p1Handler.playMoveTurnSound();
-                renderOnce();
-                e.consume(); // Ignore the input
-                return;
-            }
-
-                switch (e.getCode()) {
-                    case P -> togglePause();
-                    case R -> {
-                        p1Handler.restartGame();
-                        loop.start();
-                        renderOnce();
-                    }
-                    case M -> handleAudioToggle('M');
-                    case S -> handleAudioToggle('S');
-                    case ESCAPE -> askExitToMenu();
-                    default -> {}
-                }
-                e.consume();
+                handleSinglePlayerInput(e);
             }
         });
     }
-
-    private void renderOnce() {
-        draw(p1Canvas, p1Handler);
-        if (isTwoPlayer()) draw(p2Canvas, p2Handler);
-        updateHUD();
+    
+    private void handleTwoPlayerInput(KeyEvent e) {
+        switch (e.getCode()) {
+            case COMMA -> forwardPlayerAction(p1Handler, Action.MOVE_LEFT, e);
+            case PERIOD -> forwardPlayerAction(p1Handler, Action.MOVE_RIGHT, e);
+            case SPACE -> forwardPlayerAction(p1Handler, Action.SOFT_DROP, e);
+            case L -> forwardPlayerAction(p1Handler, Action.ROTATE_CW, e);
+            case LEFT -> forwardPlayerAction(p2Handler, Action.MOVE_LEFT, e);
+            case RIGHT -> forwardPlayerAction(p2Handler, Action.MOVE_RIGHT, e);
+            case DOWN -> forwardPlayerAction(p2Handler, Action.SOFT_DROP, e);
+            case UP -> forwardPlayerAction(p2Handler, Action.ROTATE_CW, e);
+            case P -> { forwardPauseToggle(); e.consume(); }
+            case R -> { forwardRestart(); e.consume(); }
+            case M -> { forwardAudioToggle('M'); e.consume(); }
+            case S -> { forwardAudioToggle('S'); e.consume(); }
+            case ESCAPE -> { forwardExitToMenu(); e.consume(); }
+            default -> {}
+        }
     }
+    
+    private void handleSinglePlayerInput(KeyEvent e) {
+        Action action = switch (e.getCode()) {
+            case LEFT  -> Action.MOVE_LEFT;
+            case RIGHT -> Action.MOVE_RIGHT;
+            case UP    -> Action.ROTATE_CW;
+            case DOWN  -> Action.SOFT_DROP;
+            case SPACE -> Action.HARD_DROP;
+            default -> null;
+        };
 
-    // Helper method to handle audio toggles
-    private void handleAudioToggle(char key) {
+        if (action != null) {
+            forwardPlayerAction(p1Handler, action, e);
+            return;
+        }
+
+        switch (e.getCode()) {
+            case P -> forwardPauseToggle();
+            case R -> forwardRestart();
+            case M -> forwardAudioToggle('M');
+            case S -> forwardAudioToggle('S');
+            case ESCAPE -> forwardExitToMenu();
+            default -> {}
+        }
+        e.consume();
+    }
+    
+    // Pure input forwarding methods - no business logic
+    private void forwardPlayerAction(GameEventHandler handler, Action action, KeyEvent e) {
+        if (!handler.isAIActive()) {
+            handler.handlePlayerAction(action);
+            handler.playMoveTurnSound();
+            renderOnce();
+        }
+        e.consume();
+    }
+    
+    private void forwardPauseToggle() {
+        pauseBothPlayers();
+        updateGameLoopState();
+        renderOnce();
+    }
+    
+    private void forwardRestart() {
+        p1Handler.restartGame();
+        if (isTwoPlayer()) p2Handler.restartGame();
+        loop.start();
+        renderOnce();
+    }
+    
+    private void forwardAudioToggle(char key) {
         switch (key) {
             case 'M' -> p1Handler.toggleMusic();
             case 'S' -> p1Handler.toggleSfx();
         }
         renderOnce();
     }
-
-
-
-    public void startGame(){
-        stage.setScene(buildScreen());
-
-        startBothPlayers();
-
-        stage.show();
-
-        // Audio handled by event handler
-        p1Handler.startBackgroundMusic();
-
-        loop.start();
-        renderOnce();
+    
+    private void forwardExitToMenu() {
+        askExitToMenu();
     }
 
-
-    // Toggles pause state and updates the game loop accordingly.
-    private void togglePause() {
-        // Pause/resume both to keep them in sync
-        pauseBothPlayers();
-
+    private void renderOnce() {
+        renderGameBoard(p1Canvas, p1Handler);
+        if (isTwoPlayer()) renderGameBoard(p2Canvas, p2Handler);
+        updateHUD();
+    }
+    
+    private void updateGameLoopState() {
         GameStateData gameData = p1Handler.getGameStateData();
         if (gameData.gameState() == UiGameState.PAUSE) {
             loop.stop();
         } else if (gameData.gameState() == UiGameState.PLAY) {
             loop.start();
         }
-        renderOnce(); // Update overlay text
+    }
+
+
+
+    // ==================== GAME LIFECYCLE ====================
+    // Pure UI lifecycle management - business logic delegated to Controller
+    
+    public void startGame(){
+        stage.setScene(buildScreen());
+        startBothPlayers();
+        stage.show();
+        
+        // Audio handled by event handler
+        p1Handler.startBackgroundMusic();
+        
+        loop.start();
+        renderOnce();
     }
 
 
@@ -555,7 +530,7 @@ public class GameView {
 
         if (result.isPresent() && result.get() == ButtonType.OK) {
             loop.stop();
-            // Reset game before exiting to menu
+            // Reset game before exiting to menu - delegate to controller
             p1Handler.resetGame();
             if (isTwoPlayer()) {
                 p2Handler.resetGame();
@@ -571,8 +546,10 @@ public class GameView {
         }
     }
 
-    // ==================== DRAWING METHODS ====================
-    private void draw(Canvas canvas, GameEventHandler handler) {
+    // ==================== RENDERING METHODS ====================
+    // Pure UI rendering - no business logic, only visual representation
+    
+    private void renderGameBoard(Canvas canvas, GameEventHandler handler) {
         GraphicsContext g = canvas.getGraphicsContext2D();
         double W = canvas.getWidth(), H = canvas.getHeight();
 
@@ -594,13 +571,13 @@ public class GameView {
         // Draw fixed and current blocks
         drawBoardCells(g, bx, by, gameData, BW, BH);
 
-        // Game state overlay
+        // Game state overlay - pure UI rendering
         switch (gameData.gameState()) {
             case PAUSE -> drawCenteredOverlay(g, canvas, "Game is paused.\nPress P to continue. ");
             case GAME_OVER -> {
                 drawCenteredOverlay(g, canvas, "GAME OVER\nPress R to Restart\nESC to Menu");
                 loop.stop();
-                // Automatically submit score if eligible (player name was collected before game start)
+                // Score submission handled by GameEventHandler (Controller layer)
                 handler.submitStoredScore();
             }
             default -> { /* PLAY */ }
