@@ -1,6 +1,8 @@
-package tetris.model;
+package tetris.model.board;
 
-import tetris.util.BoardUtils;
+import tetris.model.tetromino.PieceGenerator;
+import tetris.model.tetromino.Tetromino;
+import tetris.model.tetromino.TetrominoType;
 
 public class GameBoard implements IGameBoard {
     private final int width, height;
@@ -19,6 +21,10 @@ public class GameBoard implements IGameBoard {
     @Override public Tetromino current(){ return current; }
     @Override public int getWidth()  { return width; }
     @Override public int getHeight() { return height; }
+
+    public TetrominoType getNextTetrominoType() {
+        return generator != null ? generator.peekNext() : null;
+    }
 
     @Override
     public boolean newPiece() {
