@@ -2,6 +2,7 @@ package tetris.model.score;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
